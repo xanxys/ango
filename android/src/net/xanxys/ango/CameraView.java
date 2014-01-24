@@ -1,6 +1,10 @@
 package net.xanxys.ango;
 
 import java.io.IOException;
+import java.util.List;
+
+import boofcv.android.ConvertNV21;
+import boofcv.struct.image.ImageUInt8;
 
 import android.content.Context;
 import android.hardware.Camera;
@@ -9,14 +13,24 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
+public class CameraView extends SurfaceView implements SurfaceHolder.Callback,
+		Camera.PreviewCallback {
 	private static final String TAG = "CameraView";
 	private SurfaceHolder mHolder;
 	private Camera mCamera;
+	private ImageUInt8 grayImage;
 
 	public CameraView(Context context, Camera camera) {
 		super(context);
 		mCamera = camera;
+
+		// Configure camera parameter and initialize buffer.
+		Camera.Parameters param = mCamera.getParameters();
+		List<Camera.Size> sizes = param.getSupportedPreviewSizes();
+		Camera.Size s = sizes.get(closest(sizes, 320, 240));
+		param.setPreviewSize(s.width, s.height);
+		mCamera.setParameters(param);
+		grayImage = new ImageUInt8(s.width, s.height);
 
 		// Install a SurfaceHolder.Callback so we get notified when the
 		// underlying surface is created and destroyed.
@@ -26,11 +40,32 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
 		mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 	}
 
+	public static int closest(List<Camera.Size> sizes, int width, int height) {
+		int best = -1;
+		int bestScore = Integer.MAX_VALUE;
+
+		for (int i = 0; i < sizes.size(); i++) {
+			Camera.Size s = sizes.get(i);
+
+			int dx = s.width - width;
+			int dy = s.height - height;
+
+			int score = dx * dx + dy * dy;
+			if (score < bestScore) {
+				best = i;
+				bestScore = score;
+			}
+		}
+
+		return best;
+	}
+
 	public void surfaceCreated(SurfaceHolder holder) {
 		// The Surface has been created, now tell the camera where to draw the
 		// preview.
 		try {
 			mCamera.setPreviewDisplay(holder);
+			mCamera.setPreviewCallback(this);
 			mCamera.startPreview();
 		} catch (IOException e) {
 			Log.d(TAG, "Error setting camera preview: " + e.getMessage());
@@ -68,5 +103,10 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
 		} catch (Exception e) {
 			Log.d(TAG, "Error starting camera preview: " + e.getMessage());
 		}
+	}
+
+	@Override
+	public void onPreviewFrame(byte[] data, Camera camera) {
+		ConvertNV21.nv21ToGray(data, grayImage.width, grayImage.height, grayImage);
 	}
 }
