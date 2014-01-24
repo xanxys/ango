@@ -17,6 +17,9 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
+		final OverlayFragment fragment = (OverlayFragment) getFragmentManager()
+				.findFragmentById(R.id.fragment1);
+
 		camera = getCameraInstance();
 		cameraView = new CameraView(this, camera);
 		FrameLayout layout = (FrameLayout) findViewById(R.id.camera_view);

@@ -19,4 +19,10 @@
 
     </FrameLayout>
 
+    <fragment
+        android:id="@+id/fragment1"
+        android:name="net.xanxys.ango.OverlayFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
 </RelativeLayout>
